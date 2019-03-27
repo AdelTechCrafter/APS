@@ -1,101 +1,128 @@
-use_module(library(lists)).
-mem(X, [X|_]).
-mem(X, [_|XS]) :- mem(X,XS).
+/*utilitaires*/
+mem(X,[X|_]).
+mem(X,[_|Z]):-mem(X,Z).
+assoc(K,[(K,V)|_],V).
+assoc(K,[_|L],V):-assoc(K,L,V).
+append([],L,L).
+append([X|Y],L,[X|L2]):-append(Y,L,L2).
 
-assoc(X, [(X,V)|_], V).
-assoc(X, [_|XS], V) :- assoc(X, XS, V).
+typeExprs(_,[],[]).
+typeExprs(G,[E|EL],[T|TL]):-typeExpr(G,E,T),typeExprs(G,EL,TL).
 
-delete_one(X,[X|Z],Z).
-delete_one(X,[V|Z],[V|Y]):-
-	X\==V,
-	delete_one(X,Z,Y).
+getTypes([(_,T)],[T]).
+getTypes([(_,T)|ARGS],[T|LT]):-getTypes(ARGS,LT).
 	
-typeExpr(_,A,int):-
-    TYPENUM(A).
- 
+/*Expressions*/
+
 typeExpr(_,true,bool).
 typeExpr(_,false,bool).
-
-/*
-typeExpr(_,A,int):-
-    integer(A).
- 
-typeExpr(_,true,bool).
-typeExpr(_,false,bool).
-*/
-    
-typeExpr(G,A,T):-
-	assoc(A,G,T).
-	    
-typeExpr(G,add(A,B),int):-
-    member((A,int),G),
-    member((B,int),G).
-    /*  typeExpr(_,A,int),
-    typeExpr(_,B,int).
-    (member((A,int),G),
-    typeExpr(_,B,int));
-    (member((B,int),G),
-    typeExpr(_,A,int));
-    (member((A,int),G),
-    member((A,int),G)).
-    */
-    
-    
-    
-
-	    
-typeExpr(_,sub(A,B),int):-
-    typeExpr(_,A,int),
-    typeExpr(_,B,int).
-
-typeExpr(_,mul(A,B),int):-
-    typeExpr(_,A,int),
-    typeExpr(_,B,int).
-
-
-typeExpr(_,div(A,B),int):-
-    typeExpr(_,A,int),
-    typeExpr(_,B,int).
-
-typeExpr(_,not(A),bool):-
-    typeExpr(_,A,bool).
-
-typeExpr(_,and(A,B),bool):-
-    typeExpr(_,A,bool),
-    typeExpr(_,B,bool).
-
-typeExpr(_,or(A,B),bool):-
-    typeExpr(_,A,bool),
-    typeExpr(_,B,bool).
-
-typeExpr(_,eq(A,B),bool):-
-    typeExpr(_,A,bool),
-    typeExpr(_,B,bool).
-
-typeExpr(_,lt(A,B),bool):-
-    typeExpr(_,A,int),
-    typeExpr(_,B,int).
-
-typeState(_,echo(A),void):-
-    typeExpr(_,A,int).
-
-typeExpr(_,if(COND,CONS,ALTER),T):-
-	typeExpr(_,COND,bool),
-	typeExpr(_,CONS,T),
-	typeExpr(_,ALTER,T).
+typeExpr(_,X,int):-integer(X).
 	
+typeExpr(G,not(X),bool):-
+    typeExpr(G,X,bool).
 
-fetch(X, [(X,V)|_], V).
-fetch(X, [_|XS], V) :- fetch(X, XS, V).
+typeExpr(G,and(X,Y),bool):-
+    typeExpr(G,X,bool),
+    typeExpr(G,Y,bool).
+
+typeExpr(G,or(X,Y),bool):-
+    typeExpr(G,X,bool),
+    typeExpr(G,Y,bool).
+    
+typeExpr(G,eq(X,Y),bool):-
+    typeExpr(G,X,bool),
+    typeExpr(G,Y,bool).
+
+typeExpr(G,lt(X,Y),bool):-
+    typeExpr(G,X,int),
+    typeExpr(G,Y,int).
+
+typeExpr(G,add(X,Y),int):-
+    typeExpr(G,X,int),
+    typeExpr(G,Y,int).
+                
+typeExpr(G,sub(X,Y),int):-
+    typeExpr(G,X,int),
+    typeExpr(G,Y,int).
+
+typeExpr(G,mul(X,Y),int):-
+    typeExpr(G,X,int),
+    typeExpr(G,Y,int).
 
 
-typeDec(G,declarationConst(I,T,E),[(I,T)|G]):-
-    typeExpr(_,E,T).
+typeExpr(G,div(X,Y),int):-
+    typeExpr(G,X,int),
+    typeExpr(G,Y,int).
+
+/*IF*/
+typeExpr(G,if(COND,CONS,ALTER),T):-
+	typeExpr(G,COND,bool),
+	typeExpr(G,CONS,T),
+	typeExpr(G,ALTER,T).
+
+/*Symbole*/
+typeExpr(G,X,T):-mem((X,T),G). 
+
+/*ABSTRACTION*/
+typeExpr(G,functionAnonyme(ARGS,E),typefun(TS,T)):-
+	getTypes(ARGS,TS),
+	append(G,ARGS,GG),
+	typeExpr(GG,E,T).
+
+/*Application(appel de fonction)*/
+typeExpr(G,astSequence(F,LE),T):-
+	typeExpr(G,F,typefun(LT,T)),
+	typeExprs(G,LE,LT).
+	/*LT : type des arguments*/
+	/*T:type de retour de la fonction*/
+
+/*Echo*/
+typeState(G,echo(X),void):-
+    typeExpr(G,X,int).
+
+/*Declaration*/
+
+/*declaration const*/
+typeDec(G,const(I,T,E),[(I,T)|G]):-
+    typeExpr(G,E,T).
   
- 
 
-typeDec(G,declaration(I,T,E),[(I,T)|G]):-
-    typeExpr(_,E,T).
+/*declaration de fonction*/
+typeDec(G,fun(X,T,ARGS,E),[(X,typefun(TS,T))|G]):-
+	append(G,ARGS,G2),
+	typeExpr(G2,E,T),
+	getTypes(ARGS,TS).
+
+/*declaration de fonctions récursive*/
+typeDec(G,funRec(X,T,ARGS,E),[(X,typefun(TS,T))|G]):-
+	append(G,ARGS,G2),
+	append(G2,(X,typefun(TS,T)),G3),
+	typeExpr(G3,E,T),
+	getTypes(ARGS,TS).
+	
+	
+/*sequences(suite de commandes)*/
+
+/*commence par une déclaration*/
+typeCmds(G,[DEC|CMDS],void):-
+	typeDec(G,DEC,G2),
+	typeCmds(G2,CMDS,void).
+/*commence par une instruction*/
+typeCmds(G,[STAT|CMDS],void):-
+	typeStat(G,STAT,void),
+	typeCmds(G,CMDS,void).
+
+/*suite vide*/
+typeCmds(_,[epsilon],void).
+
+/*Programmes*/
+typeProg(prog(CMDS),void):-
+	append(CMDS,[epsilon],L),
+	typeCmds([],L,void).
+
+
+
+
 
 
     

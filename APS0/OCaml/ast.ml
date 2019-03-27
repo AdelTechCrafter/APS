@@ -6,7 +6,6 @@ type expr =
 	| ASTBool of bool
 	| ASTAlternative of expr * expr * expr
 	| ASTEcho of expr
-	| ASTDec of expr * expr * expr
 	| ASTDecConst of expr * expr * expr
 	| ASTType of string
 	| ASTArg of expr * expr
@@ -15,12 +14,14 @@ type expr =
 	| ASTListArg of expr * expr
 	| ASTFunAno of expr *expr
 	| ASTSequence of expr * expr
+	| ASTExprs of expr * expr
 	| ASTFun of expr * expr * expr * expr
 	| ASTFunRec of expr * expr * expr * expr
 	| ASTLog of op * expr * expr
 	| ASTNot of op * expr
 	| ASTCmds of expr * expr
 	| ASTProg of expr
+	
 	
 
 let string_of_op op =
