@@ -76,7 +76,7 @@ let _ =
 	try
 		let fl = open_in Sys.argv.(1) in
 		let lexbuf = Lexing.from_channel fl in
-		let e = Parser.prog Lexer.token lexbuf in
+		let e = Parser.line Lexer.token lexbuf in
 			print_prolog e;
 			print_char '\n'
 	with Lexer.Eof -> exit 0

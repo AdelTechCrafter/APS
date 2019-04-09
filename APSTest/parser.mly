@@ -12,10 +12,13 @@ open Ast
 %token CONST FUN REC
 %token EOL
 
-%start prog
-%type <Ast.expr> prog
+%start line
+%type <Ast.expr> line
 
 %%
+
+line :
+	expr EOL {$1}
 
 prog:
 	LCRO EOL cmds EOL RCRO { ASTProg($3) }
