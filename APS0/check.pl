@@ -30,8 +30,8 @@ typeExpr(G,or(X,Y),bool):-
     typeExpr(G,Y,bool).
     
 typeExpr(G,eq(X,Y),bool):-
-    typeExpr(G,X,bool),
-    typeExpr(G,Y,bool).
+    typeExpr(G,X,int),
+    typeExpr(G,Y,int).
 
 typeExpr(G,lt(X,Y),bool):-
     typeExpr(G,X,int),
@@ -70,7 +70,7 @@ typeExpr(G,functionAnonyme(ARGS,E),typefun(TS,T)):-
 	typeExpr(GG,E,T).
 
 /*Application(appel de fonction)*/
-typeExpr(G,astSequence(F,LE),T):-
+typeExpr(G,application(F,LE),T):-
 	typeExpr(G,F,typefun(LT,T)),
 	typeExprs(G,LE,LT).
 	/*LT : type des arguments*/
@@ -96,7 +96,7 @@ typeDec(G,fun(X,T,ARGS,E),[(X,typefun(TS,T))|G]):-
 /*declaration de fonctions récursive*/
 typeDec(G,funRec(X,T,ARGS,E),[(X,typefun(TS,T))|G]):-
 	append(G,ARGS,G2),
-	append(G2,(X,typefun(TS,T)),G3),
+	append(G2,[(X,typefun(TS,T))],G3),
 	typeExpr(G3,E,T),
 	getTypes(ARGS,TS).
 	
@@ -109,7 +109,7 @@ typeCmds(G,[DEC|CMDS],void):-
 	typeCmds(G2,CMDS,void).
 /*commence par une instruction*/
 typeCmds(G,[STAT|CMDS],void):-
-	typeStat(G,STAT,void),
+	typeState(G,STAT,void),
 	typeCmds(G,CMDS,void).
 
 /*suite vide*/
@@ -120,6 +120,7 @@ typeProg(prog(CMDS),void):-
 	append(CMDS,[epsilon],L),
 	typeCmds([],L,void).
 
+	
 
 
 

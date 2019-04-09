@@ -12,15 +12,18 @@ open Ast
 %token CONST FUN REC
 %token EOL
 
-%start cmds
-%type <Ast.expr> line
-%type <Ast.expr> cmds
+%start prog
+%type <Ast.expr> prog
 
 %%
 
-line:
-	expr EOL { $1 }
-;
+prog:
+	LCRO EOL cmds EOL RCRO { ASTProg($3) }
+
+cmds:
+	stat { $1 }
+	| decl SEMICOLON EOL cmds { ASTDecs($1,$4) }
+	| stat SEMICOLON EOL cmds { ASTStats($1,$4) }
 
 expr:
 	NUM { ASTNum($1) }
@@ -75,7 +78,4 @@ decl:
 	| FUN REC IDENT tprim LCRO args RCRO expr { ASTFunRec($3,$4,$6,$8) }
 ;
 
-cmds:
-	stat { $1 }
-	| decl SEMICOLON cmds { ASTDecs($1,$3) }
-	| stat SEMICOLON cmds { ASTStats($1,$3) }
+

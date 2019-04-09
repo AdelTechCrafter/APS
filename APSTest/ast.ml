@@ -23,6 +23,7 @@ type expr =
 	| ASTFunRec of string * tprim * expr * expr
 	| ASTDecs of expr * expr
 	| ASTStats of expr * expr
+	| ASTProg of expr
 
 let string_of_op op = 
 	match op with
@@ -54,7 +55,7 @@ let rec string_of_type t =
 	Int -> "int"
 	| Bool -> "bool"
 	| Types(t1,t2) -> (string_of_type t1)^","^(string_of_type t2)^","
-	| TypeFun(t1,t2) -> "(["^(string_of_type t1)^"],"^(string_of_type t2)^")" 
+	| TypeFun(t1,t2) -> "typefun(["^(string_of_type t1)^"],"^(string_of_type t2)^")" 
 
 
 

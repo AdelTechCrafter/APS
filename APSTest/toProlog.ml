@@ -68,10 +68,15 @@ let rec print_prolog e =
 	| ASTStats(stat,cmds) -> (print_prolog stat;
 				Printf.printf ",";
 				print_prolog cmds )
+	| ASTProg (cmds) -> (Printf.printf "prog([";
+			    print_prolog cmds;
+			    Printf.printf "])")
 
-let _=
+let _ =
 	try
-		let lexbuf = Lexing.from_channel stdin in
-		let e =  Parser.cmds Lexer.token lexbuf in
-		print_prolog e;
+		let fl = open_in Sys.argv.(1) in
+		let lexbuf = Lexing.from_channel fl in
+		let e = Parser.prog Lexer.token lexbuf in
+			print_prolog e;
+			print_char '\n'
 	with Lexer.Eof -> exit 0
