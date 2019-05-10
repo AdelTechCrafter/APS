@@ -1,6 +1,6 @@
 open Ast;;
 
-type valeur = InN of int | InF | InFR | None
+type valeur = InN of int | InF of expr * string list | InFR | None
 type ident = Pair of string * valeur
 
 let env = ref [];;
@@ -71,7 +71,7 @@ let rec eval e =
 	| ASTBool b -> if b then InN(1)  else InN(0)
 	| ASTId id -> if (mem_env id !env) then extract_from_env id !env else failwith "not a variable"
 	| ASTPrim(op,e1,e2) -> if is_op op then  (eval_op op (eval e1) (eval e2) ) else failwith "not an operator"
-	| ASTIf(e1,e2,e3) -> if (eval e1) = InN(1) then eval e2 else eval e3
+	| ASTIf(e1,e2,e3) -> if (eval e1) = InN(1) then eval e2 else if (eval e1) = InN(0) then (eval e3) else failwith "not a boolean value"
 	| _ -> None
 
 let _=
