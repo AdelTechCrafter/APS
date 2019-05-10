@@ -1,0 +1,4 @@
+typeExpr([(a,int),(b,bool),(f,typefun([int,int],int))],astExprs(f,[20,12]),X).
+
+
+
