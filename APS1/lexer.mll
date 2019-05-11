@@ -4,11 +4,13 @@
 }
 
 rule token = parse
-[' ' '\t'] { token lexbuf } (* skip blanks *)
-| ['\n' ] { EOL }
-| ['0'-'9']+('.'['0'-'9'])? as lxm { NUM(int_of_string lxm) }
-| "true" { TRUE(true) }
-| "false" {FALSE(false)}
+(*Séparateurs*)
+[' ' '\t' '\n'] { token lexbuf } (* skip blanks *)
+(*Constantes numériques*)
+| ('-'?)['0'-'9']+ as lxm { NUM(int_of_string lxm) }
+(*mots-clefs*)
+| "true" { TRUE }
+| "false" {FALSE}
 | "add" { PLUS }
 | "sub" { MINUS }
 | "mul" { TIMES }
@@ -25,7 +27,15 @@ rule token = parse
 | "CONST" { CONST }
 | "FUN" { FUN }
 | "REC" { REC }
-| ['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9']* as id { IDENT(id)}
+(*APS1*)
+| "VAR"            { VAR }
+| "SET"		       { SET }
+| "PROC" 		   { PROC }
+| "IF" 		       { IFB }
+| "WHILE"          { WHILE }
+| "CALL"		   { CALL }
+| "VOID"		   { VOID }
+(*Symboles réservés*)
 | '(' { LPAR }
 | ')' { RPAR }
 | '[' { LCRO }
@@ -35,5 +45,8 @@ rule token = parse
 | ',' { COMA }
 | "->" { ARROW }
 | '*' {STAR}
+(*end of file*)
 | eof { raise Eof }
+(*identificateurs*)
+| ['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9']* as id { IDENT(id)}
 

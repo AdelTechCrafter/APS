@@ -1,32 +1,74 @@
-type op = Add | Mul | Sub | Div | And | Or | Eq | Lt | Not
+type opbin = Add | Mul | Sub | Div | And | Or | Eq | Lt 
+
+and opun=Not
 
 
-type tprim = Int | Bool | Types of tprim * tprim 
-	| TypeFun of tprim * tprim
+and tprim = 
+	Int 
+	|Bool
+	(*APS1*)
+	|Void
+	|ASTArrow of types * tprim
 
-type expr =
-	ASTNum of int
+and types= 
+	ASTType of tprim
+	|ASTTypes of tprim * types
+	
+and arg=
+	ASTArg of string * tprim
+
+and args= 
+	ASTArg of arg
+	|ASTArgs of arg * args
+	
+
+and expr =
+	ASTTrue
+	| ASTFalse
+	| ASTNum of int
 	| ASTId of string
-	| ASTPrim of op * expr * expr
-	| ASTUnaryPrim of op * expr
-	| ASTBool of bool
-	| ASTArg of expr * tprim
-	| ASTArgs of expr * expr
-	| ASTAbs of expr * expr
-	| ASTApp of expr * expr
-	| ASTSequence of expr * expr
-	| ASTSingle of expr
+	| ASTBPrim of opbin * expr * expr
+	| ASTUPrim of opun * expr
 	| ASTIf of expr * expr * expr
-	| ASTEcho of expr
-	| ASTConst of string * tprim * expr
-	| ASTFun of string * tprim * expr * expr
-	| ASTFunRec of string * tprim * expr * expr
-	| ASTDecs of expr * expr
-	| ASTStats of expr * expr
-	| ASTProg of expr
+	| ASTLambda of args * expr
+	| ASTApply of expr * exprs
+	
+and exprs=
+	ASTExpr of expr
+	|ASTExprs of expr * exprs
 
-let string_of_op op = 
-	match op with
+and dec=
+	| ASTConst of string * tprim * expr
+	| ASTFun of string * tprim * args * expr
+	| ASTFunRec of string * tprim * args * expr
+	(*APS1*)
+	|ASTVar of string * tprim
+	| ASTProc of string * args * block
+	| ASTProcRec of string * args * block
+	
+
+and stat=
+	ASTEcho of expr
+	(*APS1*)
+	|ASTSet of string * expr
+	|ASTIfb of expr * block * block
+	|ASTWhile of expr * block
+	|ASTCall of expr * exprs
+
+and cmds=
+	ASTStat of stat
+	|ASTDec of dec * cmds
+	|ASTStatcmd of stat * cmds
+
+(*APS1*)
+and block=
+	ASTBlock of cmds
+
+and prog=
+	ASTProg of cmds
+
+let string_of_opbin opbin = 
+	match opbin with
 	 Add -> "add"
 	| Mul -> "mul"
 	| Sub -> "sub"
@@ -35,10 +77,9 @@ let string_of_op op =
 	| Or -> "or"
 	| Eq -> "eq"
 	| Lt -> "lt"
-	| Not -> "not"
 
-let op_of_string op =
-	match op with
+let opbin_of_string opbin =
+	match opbin with
 	"add" -> Add
 	| "mul" -> Mul
 	| "sub" -> Sub
@@ -47,18 +88,13 @@ let op_of_string op =
 	| "or" -> Or
 	| "eq" -> Eq
 	| "lt" -> Lt
-	| "not" -> Not
 	| _ -> failwith "not an operator"
 
-let rec string_of_type t =
-	match t with
-	Int -> "int"
-	| Bool -> "bool"
-	| Types(t1,t2) -> (string_of_type t1)^","^(string_of_type t2)^","
-	| TypeFun(t1,t2) -> "typefun(["^(string_of_type t1)^"],"^(string_of_type t2)^")" 
+let string_of_opun opun = 
+	match opun with
+		|Not -> "not"
 
-
-
-
-
-
+let opun_of_string opun =
+	match opun with
+	| "not" -> Not
+	| _ -> failwith "not an operator"	
