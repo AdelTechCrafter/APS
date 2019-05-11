@@ -1,33 +1,34 @@
 type token =
   | NUM of (int)
   | IDENT of (string)
-  | TYPEBOOL of (string)
-  | TYPENUM of (string)
-  | IF
+  | INT
+  | BOOL
+  | TRUE of (bool)
+  | FALSE of (bool)
   | PLUS
   | MINUS
   | TIMES
   | DIV
-  | NOT
   | AND
   | OR
   | EQ
   | LT
+  | NOT
+  | IF
+  | ECHO
   | LPAR
   | RPAR
   | LCRO
   | RCRO
-  | EOL
-  | BOOL of (bool)
-  | ECHO
-  | CONST
   | COLON
+  | SEMICOLON
   | COMA
   | ARROW
   | STAR
-  | SEMICOLON
+  | CONST
   | FUN
   | REC
+  | EOL
 
-val prog :
+val line :
   (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> Ast.expr
