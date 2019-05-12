@@ -1,8 +1,3 @@
-main_stdin :-
-	read(user_input,T),
-	typeProg([],T,R),
-	print(R).
-	
 /*utilitaires*/
 mem(X, [X|_]).
 mem(X, [_|XS]) :- mem(X,XS).
@@ -78,35 +73,41 @@ typeDec(C,const(X,T,E),[(X,T)|C]) :-
 	typeExpr(C,E,T).
 	
 /*Fun*/
-typeDec(C,fun(ID,T,ARGS,BODY),[(ID,arrowtype(RES,T))|C]):-
+typeDec(C,fun(ID,T,ARGS,BODY),CB):-
 	append(ARGS,C,CT),
 	typeExpr(CT,BODY,T),
-	get_typeArgs(ARGS,RES).
+	get_typeArgs(ARGS,RES),
+	CB=[(ID,arrowtype(RES,T))|C].
 	
 /*funRec*/
-typeDec(C,funRec(ID,T,ARGS,BODY),[(ID,arrowtype(RES,T))|C]):-
+typeDec(C,funRec(ID,T,ARGS,BODY),CB):-
 	get_typeArgs(ARGS,RES),
 	append(ARGS,C,CT),
 	CTT = [(ID,arrowtype(RES,T))|CT],
-	typeExpr(CTT,BODY,T).
+	typeExpr(CTT,BODY,T),
+	CB=[(ID,arrowtype(RES,T))|C].
 
-/**************APS1*************/
+/***APS1***/
 
 /*var*/
-typeDec(C,var(X,_),CN) :- CN=[(X,_)|C].
+typeDec(C,var(X,T),CB) :-
+	CB=[(X,T)|C].
+
 /*proc*/
-typeDec(C,proc(ID,ARGS,BODY),[(ID,arrowtype(RES,void))|C]):-
+typeDec(C,proc(ID,ARGS,BODY),CB):-
 	append(ARGS,C,CT),
 	typeBlock(CT,BODY,void),
-	get_typeArgs(ARGS,RES).
+	get_typeArgs(ARGS,RES),
+	CB=[(ID,arrowtype(RES,void))|C].
 	
 	
 /*procRec*/
-typeDec(C,procRec(ID,ARGS,BODY),[(ID,arrowtype(RES,void))|C]):-
+typeDec(C,procRec(ID,ARGS,BODY),CB):-
 	get_typeArgs(ARGS,RES),
 	append(ARGS,C,CT),
 	CTT = [(ID,arrowtype(RES,void))|CT],
-	typeBlock(CTT,BODY,void).
+	typeBlock(CTT,BODY,void),
+	CB=[(ID,arrowtype(RES,void))|C].
 	
 /******/
 
@@ -144,11 +145,11 @@ typeExpr(C,apply(lambda(ARGSTYPE,BODY),ARGS),TF) :-
 	typeExpr(CB,BODY,TF).
 	
 typeExpr(C,apply(apply(X,Y),ARGS),TR) :-
-	get_type(ARGS,RES),
-	typeExpr(C,apply(X,Y),arrowtype(RES,TR)).
+	get_type(ARGS,LT),
+	typeExpr(C,apply(X,Y),arrowtype(LT,TR)).
 				
 /*abs*/
-typeExpr(C,lambda(ARGS,BODY),arrow(_,TF)) :-
+typeExpr(C,lambda(ARGS,BODY),arrowtype(_,TF)) :-
 	append(ARGS,C,CB),
 	typeExpr(CB,BODY,TF).	
 	
@@ -188,8 +189,8 @@ typeExpr(C,lt(X,Y),bool) :-
 	
 typeExpr(C,not(X),bool) :-
 	typeExpr(C,X,bool).
-	
 
-
-   
-
+main_stdin :-
+	read(user_input,T),
+	typeProg([],T,R),
+	print(R).

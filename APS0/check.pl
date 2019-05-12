@@ -1,131 +1,148 @@
 /*utilitaires*/
-mem(X,[X|_]).
-mem(X,[_|Z]):-mem(X,Z).
-assoc(K,[(K,V)|_],V).
-assoc(K,[_|L],V):-assoc(K,L,V).
-append([],L,L).
-append([X|Y],L,[X|L2]):-append(Y,L,L2).
+mem(X, [X|_]).
+mem(X, [_|XS]) :- mem(X,XS).
 
-typeExprs(_,[],[]).
-typeExprs(G,[E|EL],[T|TL]):-typeExpr(G,E,T),typeExprs(G,EL,TL).
+assoc(X, [(X,V)|_], V).
+assoc(X, [_|XS], V) :- assoc(X, XS, V).
 
-getTypes([(_,T)],[T]).
-getTypes([(_,T)|ARGS],[T|LT]):-getTypes(ARGS,LT).
+get_type([],[]).
+get_type([A|ARGS],[T|TYPES]) :-
+	typeExpr([],A,T),
+	get_type(ARGS,TYPES).
+
+get_typeArgs([],[]).
+get_typeArgs([(_,T)|ARGS],[T|RES]) :-
+	get_typeArgs(ARGS,RES).
+		
+checkArgs(_,[],[]).
+checkArgs(C,[ARG|ARGS],[ARGTYPE|ARGSTYPE]) :-
+	typeExpr(C,ARG,ARGTYPE),
+	checkArgs(C,ARGS,ARGSTYPE).
+
+
 	
-/*Expressions*/
-
-typeExpr(_,true,bool).
-typeExpr(_,false,bool).
-typeExpr(_,X,int):-integer(X).
-	
-typeExpr(G,not(X),bool):-
-    typeExpr(G,X,bool).
-
-typeExpr(G,and(X,Y),bool):-
-    typeExpr(G,X,bool),
-    typeExpr(G,Y,bool).
-
-typeExpr(G,or(X,Y),bool):-
-    typeExpr(G,X,bool),
-    typeExpr(G,Y,bool).
-    
-typeExpr(G,eq(X,Y),bool):-
-    typeExpr(G,X,int),
-    typeExpr(G,Y,int).
-
-typeExpr(G,lt(X,Y),bool):-
-    typeExpr(G,X,int),
-    typeExpr(G,Y,int).
-
-typeExpr(G,add(X,Y),int):-
-    typeExpr(G,X,int),
-    typeExpr(G,Y,int).
-                
-typeExpr(G,sub(X,Y),int):-
-    typeExpr(G,X,int),
-    typeExpr(G,Y,int).
-
-typeExpr(G,mul(X,Y),int):-
-    typeExpr(G,X,int),
-    typeExpr(G,Y,int).
+/*prog*/
+typeProg(C,prog(X),void) :- typeCmds(C,X,void).
 
 
-typeExpr(G,div(X,Y),int):-
-    typeExpr(G,X,int),
-    typeExpr(G,Y,int).
-
-/*IF*/
-typeExpr(G,if(COND,CONS,ALTER),T):-
-	typeExpr(G,COND,bool),
-	typeExpr(G,CONS,T),
-	typeExpr(G,ALTER,T).
-
-/*Symbole*/
-typeExpr(G,X,T):-mem((X,T),G). 
-
-/*ABSTRACTION*/
-typeExpr(G,functionAnonyme(ARGS,E),typefun(TS,T)):-
-	getTypes(ARGS,TS),
-	append(G,ARGS,GG),
-	typeExpr(GG,E,T).
-
-/*Application(appel de fonction)*/
-typeExpr(G,application(F,LE),T):-
-	typeExpr(G,F,typefun(LT,T)),
-	typeExprs(G,LE,LT).
-	/*LT : type des arguments*/
-	/*T:type de retour de la fonction*/
-
-/*Echo*/
-typeState(G,echo(X),void):-
-    typeExpr(G,X,int).
-
-/*Declaration*/
-
-/*declaration const*/
-typeDec(G,const(I,T,E),[(I,T)|G]):-
-    typeExpr(G,E,T).
-  
-
-/*declaration de fonction*/
-typeDec(G,fun(X,T,ARGS,E),[(X,typefun(TS,T))|G]):-
-	append(G,ARGS,G2),
-	typeExpr(G2,E,T),
-	getTypes(ARGS,TS).
-
-/*declaration de fonctions récursive*/
-typeDec(G,funRec(X,T,ARGS,E),[(X,typefun(TS,T))|G]):-
-	append(G,ARGS,G2),
-	append(G2,[(X,typefun(TS,T))],G3),
-	typeExpr(G3,E,T),
-	getTypes(ARGS,TS).
-	
-	
-/*sequences(suite de commandes)*/
-
-/*commence par une déclaration*/
-typeCmds(G,[DEC|CMDS],void):-
-	typeDec(G,DEC,G2),
-	typeCmds(G2,CMDS,void).
-/*commence par une instruction*/
-typeCmds(G,[STAT|CMDS],void):-
-	typeState(G,STAT,void),
-	typeCmds(G,CMDS,void).
-
-/*suite vide*/
+/*end(epsilon)*/
 typeCmds(_,[epsilon],void).
 
-/*Programmes*/
-typeProg(prog(CMDS),void):-
-	append(CMDS,[epsilon],L),
-	typeCmds([],L,void).
+typeCmds(C,[stat(X)|Y],void) :-
+	typeStat(C,X,void),
+	typeCmds(C,Y,void).
 
+/*dec*/
+typeCmds(C,[dec(X)|Y],void) :-
+	typeDec(C,X,CB),
+	typeCmds(CB,Y,void).
+
+/*echo*/
+typeStat(C,echo(X),void) :-
+	typeExpr(C,X,int).	
+
+
+
+/*const*/
+typeDec(C,const(X,T,E),[(X,T)|C]) :-
+	typeExpr(C,E,T).
 	
+/*Fun*/
+typeDec(C,fun(ID,T,ARGS,BODY),CB):-
+	append(ARGS,C,CT),
+	typeExpr(CT,BODY,T),
+	get_typeArgs(ARGS,RES),
+	CB=[(ID,arrowtype(RES,T))|C].
+	
+/*funRec*/
+typeDec(C,funRec(ID,T,ARGS,BODY),CB):-
+	get_typeArgs(ARGS,RES),
+	append(ARGS,C,CT),
+	CTT = [(ID,arrowtype(RES,T))|CT],
+	typeExpr(CTT,BODY,T),
+	CB=[(ID,arrowtype(RES,T))|C].
 
 
+/*Expressions*/
 
+/*true*/
+typeExpr(_,true,bool).
 
+/*false*/
+typeExpr(_,false,bool).
 
-    
-   
+/*num*/
+typeExpr(_,num(X),int) :-
+ 	integer(X).
+ 	
+/*ident*/
+typeExpr(C,id(X),T) :-
+	assoc(X,C,T).
 
+/*if*/
+typeExpr(C,if(COND,E1,E2),T) :-
+	typeExpr(C,COND,bool),
+	typeExpr(C,E1,T),
+	typeExpr(C,E2,T).
+
+/*app*/
+typeExpr(C,apply(id(F),ARGS),TF) :-
+	assoc(F,C,arrowtype(ARGSTYPE,TF)),
+	checkArgs(C,ARGS,ARGSTYPE).
+		
+typeExpr(C,apply(lambda(ARGSTYPE,BODY),ARGS),TF) :-
+	get_typeArgs(ARGSTYPE,RES),
+	checkArgs(C,ARGS,RES),
+	append(ARGSTYPE,C,CB),
+	typeExpr(CB,BODY,TF).
+	
+typeExpr(C,apply(apply(X,Y),ARGS),TR) :-
+	get_type(ARGS,LT),
+	typeExpr(C,apply(X,Y),arrowtype(LT,TR)).
+				
+/*abs*/
+typeExpr(C,lambda(ARGS,BODY),arrowtype(_,TF)) :-
+	append(ARGS,C,CB),
+	typeExpr(CB,BODY,TF).	
+	
+/*opérations entières */
+typeExpr(C,add(X,Y),int) :-
+	typeExpr(C,X,int),
+	typeExpr(C,Y,int).
+
+typeExpr(C,sub(X,Y),int) :-
+	typeExpr(C,X,int),
+	typeExpr(C,Y,int).
+
+typeExpr(C,mul(X,Y),int) :-
+	typeExpr(C,X,int),
+	typeExpr(C,Y,int).
+
+typeExpr(C,div(X,Y),int) :-
+	typeExpr(C,X,int),
+	typeExpr(C,Y,int).
+
+/*opérations booléennes*/
+typeExpr(C,and(X,Y),bool) :-
+	typeExpr(C,X,bool),
+	typeExpr(C,Y,bool).
+
+typeExpr(C,or(X,Y),bool) :-
+	typeExpr(C,X,bool),
+	typeExpr(C,Y,bool).
+
+typeExpr(C,eq(X,Y),bool) :-
+	typeExpr(C,X,int),
+	typeExpr(C,Y,int).
+
+typeExpr(C,lt(X,Y),bool) :-
+	typeExpr(C,X,int),
+	typeExpr(C,Y,int).
+	
+typeExpr(C,not(X),bool) :-
+	typeExpr(C,X,bool).
+
+main_stdin :-
+	read(user_input,T),
+	typeProg([],T,R),
+	print(R).

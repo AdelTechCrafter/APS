@@ -1,4 +1,0 @@
-prog([fun(f,typefun([int],int),[(x,int)],functionAnonyme([(y,int)],add(x,y))),echo(application(application(f,[21]),[21]))]).
-
-
-

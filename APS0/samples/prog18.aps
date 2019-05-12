@@ -1,0 +1,4 @@
+[
+  FUN f (int -> (int -> int)) [x:int][y:int][z:int](add x (add y z));
+  ECHO (((f 21) 2) 8)
+]
