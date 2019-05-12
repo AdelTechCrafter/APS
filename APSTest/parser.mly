@@ -12,8 +12,8 @@ open Ast
 %token CONST FUN REC
 %token EOL
 
-%start line
-%type <Ast.expr> line
+%start prog
+%type <Ast.expr> prog
 
 %%
 

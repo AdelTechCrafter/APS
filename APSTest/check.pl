@@ -117,8 +117,7 @@ typeCmds(_,[epsilon],void).
 
 /*Programmes*/
 typeProg(prog(CMDS),void):-
-	append(CMDS,[epsilon],L),
-	typeCmds([],L,void).
+	typeCmds([],CMDS,void).
 
 main(File) :-
 	open(File,read,Str),

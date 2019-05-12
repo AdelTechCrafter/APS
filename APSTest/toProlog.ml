@@ -70,7 +70,7 @@ let rec print_prolog e =
 				print_prolog cmds )
 	| ASTProg (cmds) -> (Printf.printf "prog([";
 			    print_prolog cmds;
-			    Printf.printf "])")
+			    Printf.printf ",epsilon])")
 
 let _ =
 	try
