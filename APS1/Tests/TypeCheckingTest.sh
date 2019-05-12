@@ -8,5 +8,6 @@ do
   	./../toProlog  $f| swipl -s ./../check.pl -g main_stdin
 done
 
+"Typechecking succesfully ended"
 
 

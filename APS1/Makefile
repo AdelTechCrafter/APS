@@ -4,6 +4,9 @@ OCAMLC = ocamlc
 toProlog: parser toProlog.ml
 	$(OCAMLC) -o toProlog ast.cmo lexer.cmo parser.cmo toProlog.ml 
 
+evaluateur: parser evaluateur.ml
+	$(OCAMLC) -o evaluateur ast.cmo lexer.cmo parser.cmo evaluateur.ml
+	
 parser: ast.ml lexer.mll parser.mly
 	$(OCAMLC) -c ast.ml
 	$(LEX_ML) -o lexer.ml lexer.mll
@@ -19,5 +22,6 @@ clean:
 	rm -f lexer.ml
 	rm -f parser.mli
 	rm -f parser.ml
+	rm -f evaluateur
 
-all: toProlog 
+all: toProlog evaluateur
