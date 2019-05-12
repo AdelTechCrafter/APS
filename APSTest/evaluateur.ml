@@ -59,14 +59,6 @@ let print_val value =
 	InN(n) -> Printf.printf "InN(%d)\n" n
 	| _ -> failwith "not a printable value"
 
-let copy_env env=
-	let copy = ref [] in
-		(let rec duplicate liste =
-			match liste with
-			value::tl -> copy := [value]@(!copy)
-			| [] -> ()
-		in (duplicate env; !copy) )
-
 let rec get_id arg =
 	match arg with
 	ASTArg(id,t) -> get_id id

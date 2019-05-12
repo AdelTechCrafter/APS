@@ -6,7 +6,7 @@
 rule token = parse
 [' ' '\t'] { token lexbuf } (* skip blanks *)
 | ['\n' ] { EOL }
-| ['0'-'9']+('.'['0'-'9'])? as lxm { NUM(int_of_string lxm) }
+| '-'?['0'-'9']+('.'['0'-'9'])? as lxm { NUM(int_of_string lxm) }
 | "true" { TRUE(true) }
 | "false" {FALSE(false)}
 | "add" { PLUS }

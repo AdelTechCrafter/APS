@@ -23,4 +23,4 @@ clean:
 	rm -f parser.mli
 	rm -f parser.ml
 
-all: toProlog 
+all: toProlog evaluateur

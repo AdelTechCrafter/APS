@@ -6,6 +6,10 @@ type ident = Pair of string * valeur
 let environnement = ref [];;
 let output_flux = ref [];;
 
+let print_val value =
+	match value with
+	InN(n) -> Printf.printf "%d\n" n
+	| _ -> failwith "not a printable value"
 
 let rec mem_env id liste =
 	match liste with
@@ -19,8 +23,7 @@ let rec extract_from_env id liste =
 	| _ -> failwith "erreur extraction variable"
 ;;
 
-
-let is_op op =
+let is_opbin op =
 	match op with
 	 Add -> true
 	| Mul -> true
@@ -30,61 +33,47 @@ let is_op op =
 	| Or -> true
 	| Eq -> true
 	| Lt -> true
-	| Not -> true
+
+let is_opun op =
+	match op with
+	Not -> true
 
 let get_int value =
 	match value with
 	|InN(n) -> n
 	| _ -> failwith "not in N"
 
-let eval_op op e1 e2 =
-	match op with
+let eval_opbin opbin e1 e2 =
+	match opbin with
 	 Add -> InN((get_int e1) + (get_int e2))
 	| Mul -> InN((get_int e1) * (get_int e2))
 	| Sub -> InN((get_int e1) - (get_int e2))
 	| Div -> InN((get_int e1) / (get_int e2))
-	| And -> if (get_int e1) = 0 then InN(0) else InN((get_int e2))
-	| Or -> if (get_int e1) = 1 then InN(1) else InN((get_int e2))
+	| And -> if (((get_int e1) + (get_int e2)) > 2 || (abs ( (get_int e1) - (get_int e2) )) < 0) then failwith "not logical arguments"
+		else if (get_int e1) = 0 then InN(0) else InN((get_int e2))
+	| Or -> if (((get_int e1) + (get_int e2)) > 2 || (abs ( (get_int e1) - (get_int e2) )) < 0) then failwith "not logical arguments"
+		else if (get_int e1) = 1 then InN(1) else InN((get_int e2))
 	| Eq -> if (get_int e1) = (get_int e2) then InN(1) else InN(0)
 	| Lt -> if (get_int e1) < (get_int e2) then InN(1) else InN(0)
-	| _ -> failwith "not a binary operator"
 
-let eval_unary_op op e =
+let eval_opun op e =
 	match op with
-	Not -> if get_int e = 1 then InN(0) else InN(1)
-	| _ -> failwith "not an unary operator"
+	Not -> if (get_int e) = 0 then InN(1) else if (get_int e) = 1 then InN(0) else failwith "not logical unary argument"
 
-let print_val value =
-	match value with
-	InN(n) -> Printf.printf "InN(%d)\n" n
-	| _ -> failwith "not a printable value"
-
-let copy_env env=
-	let copy = ref [] in
-		(let rec duplicate liste =
-			match liste with
-			value::tl -> copy := [value]@(!copy)
-			| [] -> ()
-		in (duplicate env; !copy) )
-
-let rec get_id arg =
+let get_id arg =
 	match arg with
-	ASTArg(id,t) -> get_id id
-	|ASTId(id) -> id
-	| _ -> failwith "cannot extract an identifier"
+	Arg(id,t) -> id
 ;;
 
 let rec create_fermeture args env =
 	match args with
-	ASTArgs(a1,an) -> create_fermeture an (env@[(get_id a1)])
-	| ASTArg(id,t) -> (env@[(get_id id)])
-	| _ -> failwith "not a list of arguments"
+	ASTArgs(a1,a2) -> create_fermeture a2 (env@[get_id a1])
+	|ASTArg(a) -> env@[get_id a]
 
 let rec extract_values expr res_values =
 	match expr with
-	ASTSequence(e,exprs) -> extract_values exprs (res_values@[e])
-	| ASTSingle(e) -> res_values@[e]
-	|_ -> failwith "not a sequence of expressions"
+	ASTExprs(e,exprs) -> extract_values exprs (res_values@[e])
+	| ASTExpr(e) -> res_values@[e]
 ;;
 
 let rec extract_fun expr =
@@ -96,63 +85,56 @@ let rec extract_fun expr =
 
 let create_env_fun fermeture exprs =
 	List.map2 (function a -> function e -> Pair(a,e) ) fermeture exprs
-;;					
-		
-let rec eval e env=
-	match e with
-	ASTNum n -> InN(n)
-	| ASTBool b -> if b then InN(1)  else InN(0)
-	| ASTId id -> if (mem_env id env) then extract_from_env id env else failwith (id^" not a variable")
-	| ASTPrim(op,e1,e2) -> if is_op op then  (eval_op op (eval e1 env) (eval e2 env) ) else failwith "not an operator"
-	| ASTIf(e1,e2,e3) -> if (eval e1 env) = InN(1) then eval e2 env else if (eval e1 env) = InN(0) then (eval e3 env) else failwith "not a boolean value"
-	| ASTAbs(args,e_prim) -> InF(e_prim,create_fermeture args [])
-	| ASTApp(expr,args_concrets) ->( match (eval expr env) with
-				InF(e_prim,fermeture) -> let (e_prim,f) = extract_fun (eval expr env) in
-				eval e_prim ((create_env_fun f (List.map (function e -> eval e env) (extract_values args_concrets []) ) )@env)
+;;
+
+let rec eval_expr expr env = 
+	match expr with
+	ASTTrue -> InN(1)
+	| ASTFalse -> InN(0)
+	| ASTNum(n) -> InN(n)
+	| ASTId(id) -> if mem_env id env then extract_from_env id env else failwith (id^" not a variable in environment")
+	| ASTBPrim(opbin,e1,e2) -> if is_opbin opbin then eval_opbin opbin (eval_expr e1 env) (eval_expr e2 env) else failwith "not a binary operator"
+	| ASTUPrim(opu,e) -> if is_opun opu then eval_opun opu (eval_expr e env) else failwith "not a unary operator"
+	| ASTIf(e1,e2,e3) -> if (eval_expr e1 env) = InN(1) then eval_expr e2 env else if (eval_expr e1 env) = InN(0) then (eval_expr e3 env) else failwith "not a boolean value"
+	| ASTLambda(args,e_prim) -> InF(e_prim,create_fermeture args [])
+	| ASTApply(expr,exprs) -> ( match (eval_expr expr env) with
+				InF(e_prim,fermeture) -> let (e_prim,f) = extract_fun (eval_expr expr env) in
+				eval_expr e_prim ((create_env_fun f (List.map (function e -> eval_expr e env) (extract_values exprs []) ) )@env)
 				 
 				| InFR(fermeture) -> let (e_prim,f) =  (extract_fun fermeture) in
-					eval (ASTApp(e_prim,args_concrets)) ((create_env_fun f (List.map (function e -> eval e env) (extract_values args_concrets []) ) )@env)
+					eval_expr (ASTApply(e_prim,exprs)) ((create_env_fun f (List.map (function e -> eval_expr e env) (extract_values exprs []) ) )@env)
 				| InN(n) -> InN(n)
 				| _ -> failwith "not an appliable function")
-	| _ -> None
+;;
 
 let eval_dec dec env=
 	match dec with
-	| ASTConst(id,t,expr) -> (Pair(id,(eval expr env))::env)
+	| ASTConst(id,t,expr) -> (Pair(id,(eval_expr expr env))::env)
 	| ASTFun(id,t,args,expr) -> (Pair(id,InF(expr,create_fermeture args []))::env)
 	| ASTFunRec(id,t,args,expr) -> (Pair(id, InFR(InF(expr,create_fermeture args [])))::env)
-	| _ -> failwith "not other dec implemented"
 
 let eval_stat stat env output =
 	match stat with
-	| ASTEcho(n) -> (eval n env)::output
-	| _ -> failwith "not a statement"
+	| ASTEcho(n) -> (eval_expr n env)::output
 
 let rec eval_cmds cmds env output =
 	match cmds with
-	ASTDecs(dec,c) -> eval_cmds c (eval_dec dec env) output
-	| ASTStats(stat,c) -> eval_cmds c env (eval_stat stat env output)
-	| ASTEcho(n) -> (eval n env)::output
-	| _ -> failwith "cmds not implemented yet"
+	ASTDec(dec,c) -> eval_cmds c (eval_dec dec env) output
+	| ASTStatcmd(stat,c) -> eval_cmds c env (eval_stat stat env output)
+	| ASTStat(stat) -> eval_stat stat env output
 
 let rec print_output sortie =
-	match sortie with
-	s1::s -> print_val s1; print_output s
-	| [] -> ()
+	List.iter (function x -> print_val x) (List.rev sortie) 
 ;;
 
 let eval_prog prog =
 	match prog with
 	ASTProg(cmds) -> print_output (eval_cmds cmds !environnement !output_flux)
-	| _ -> failwith "not a program"
-
-
-;;
 
 let _ =
 	try
 		let fl = open_in Sys.argv.(1) in
 		let lexbuf = Lexing.from_channel fl in
-		let e = Parser.prog Lexer.token lexbuf in
-			eval_prog e
+		let p = Parser.prog Lexer.token lexbuf in
+			(eval_prog p)
 	with Lexer.Eof -> exit 0
