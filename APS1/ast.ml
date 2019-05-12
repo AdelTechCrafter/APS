@@ -15,7 +15,7 @@ and types=
 	|ASTTypes of tprim * types
 	
 and arg=
-	ASTArg of string * tprim
+	Arg of string * tprim
 
 and args= 
 	ASTArg of arg

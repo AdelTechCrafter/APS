@@ -3,8 +3,8 @@ type token =
   | IDENT of (string)
   | INT
   | BOOL
-  | TRUE of (bool)
-  | FALSE of (bool)
+  | TRUE
+  | FALSE
   | PLUS
   | MINUS
   | TIMES
@@ -16,6 +16,9 @@ type token =
   | NOT
   | IF
   | ECHO
+  | CONST
+  | FUN
+  | REC
   | LPAR
   | RPAR
   | LCRO
@@ -25,10 +28,13 @@ type token =
   | COMA
   | ARROW
   | STAR
-  | CONST
-  | FUN
-  | REC
-  | EOL
+  | VAR
+  | PROC
+  | SET
+  | IFB
+  | WHILE
+  | CALL
+  | VOID
 
-val line :
-  (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> Ast.expr
+val prog :
+  (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> Ast.prog

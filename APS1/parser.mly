@@ -1,7 +1,6 @@
 %{
 open Ast
 %}
-
 %token <int> NUM
 %token <string> IDENT 
 %token INT BOOL 
@@ -13,8 +12,6 @@ open Ast
 %token COLON SEMICOLON COMA ARROW STAR
 /*APS1*/
 %token VAR PROC SET IFB WHILE CALL VOID
-
-
 %start prog
 
 %type <Ast.prog> prog
@@ -27,18 +24,18 @@ open Ast
 %type <Ast.args> args
 %type <Ast.expr> expr
 %type <Ast.exprs> exprs
-%type <Ast.opbin> opbin
-%type <Ast.opun> opun
 /*APS1*/
 %type <Ast.block> block
+/******/
+%%
 
 prog:
-	LCRO cmds RCRO { ASTProg($3) }
+	LCRO cmds RCRO { ASTProg($2) }
 ;
 
 /*APS1*/
 block:
-	LCRO cmds RCRO {ASTBlock($3)}
+	LCRO cmds RCRO {ASTBlock($2)}
 ;
 
 cmds:
@@ -77,7 +74,7 @@ types:
 ;
 
 arg:
-	IDENT COLON tprim { ASTArg($1,$3) }
+	IDENT COLON tprim { Arg($1,$3) }
 ;
 
 args:
@@ -90,8 +87,15 @@ expr:
 	| FALSE { ASTFalse }
 	| NUM { ASTNum($1) }
 	| IDENT { ASTId($1) }
-	|opun {ASTUPrim($1)}
-	|opbin {ASTBPrim($1)}
+	| LPAR NOT expr RPAR { ASTUPrim(Ast.Not,$3) }
+	| LPAR PLUS expr expr RPAR  { ASTBPrim(Ast.Add, $3, $4) }
+	| LPAR MINUS expr expr RPAR  { ASTBPrim(Ast.Sub, $3, $4) }
+	| LPAR TIMES expr expr RPAR  { ASTBPrim(Ast.Mul, $3, $4) }
+	| LPAR DIV expr expr RPAR  { ASTBPrim(Ast.Div, $3, $4) }
+	| LPAR AND expr expr RPAR  { ASTBPrim(Ast.And, $3, $4) }
+	| LPAR OR expr expr RPAR  { ASTBPrim(Ast.Or, $3, $4) }
+	| LPAR EQ expr expr RPAR  { ASTBPrim(Ast.Eq, $3, $4) }
+	| LPAR LT expr expr RPAR  { ASTBPrim(Ast.Lt, $3, $4) }
 	| LCRO args RCRO expr { ASTLambda($2,$4) }
 	| LPAR expr exprs RPAR { ASTApply($2,$3) }
 	| LPAR IF expr expr expr RPAR { ASTIf($3,$4,$5) }
@@ -101,37 +105,3 @@ exprs:
 	expr { ASTExpr($1) }
 	| expr exprs { ASTExprs($1,$2) }
 ;
-
-opun:
-	| LPAR NOT expr RPAR { ASTUPrim(Ast.Not,$3) }
-;
-
-opbin:
-	| LPAR PLUS expr expr RPAR  { ASTBPrim(Ast.Add, $3, $4) }
-	| LPAR MINUS expr expr RPAR  { ASTBPrim(Ast.Sub, $3, $4) }
-	| LPAR TIMES expr expr RPAR  { ASTBPrim(Ast.Mul, $3, $4) }
-	| LPAR DIV expr expr RPAR  { ASTBPrim(Ast.Div, $3, $4) }
-	| LPAR AND expr expr RPAR  { ASTBPrim(Ast.And, $3, $4) }
-	| LPAR OR expr expr RPAR  { ASTBPrim(Ast.Or, $3, $4) }
-	| LPAR EQ expr expr RPAR  { ASTBPrim(Ast.Eq, $3, $4) }
-	| LPAR LT expr expr RPAR  { ASTBPrim(Ast.Lt, $3, $4) }
-;
-
-
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-;
-
-
