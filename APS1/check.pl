@@ -7,8 +7,8 @@ main_stdin :-
 mem(X, [X|_]).
 mem(X, [_|XS]) :- mem(X,XS).
 
-assoc(K, [(K,V)|_], V).
-assoc(K, [_|KS], V) :- assoc(K, KS, V).
+assoc(X, [(X,V)|_], V).
+assoc(X, [_|XS], V) :- assoc(X, XS, V).
 
 get_type([],[]).
 get_type([A|ARGS],[T|TYPES]) :-
@@ -69,7 +69,7 @@ typeStat(C,while(COND,B),void) :-
 	
 /*call*/
 typeStat(C,call(id(P),ARGS),void) :-
-	assoc(P,C,arrow(ARGSTYPE,void)),
+	assoc(P,C,arrowtype(ARGSTYPE,void)),
 	checkArgs(C,ARGS,ARGSTYPE).
 /******/
 
@@ -78,24 +78,22 @@ typeDec(C,const(X,T,E),[(X,T)|C]) :-
 	typeExpr(C,E,T).
 	
 /*Fun*/
-typeDec(C,fun(ID,T,ARGS,BODY),[(ID,arrow(RES,T))|C]):-
+typeDec(C,fun(ID,T,ARGS,BODY),[(ID,arrowtype(RES,T))|C]):-
 	append(ARGS,C,CT),
 	typeExpr(CT,BODY,T),
 	get_typeArgs(ARGS,RES).
 	
 /*funRec*/
-typeDec(C,funrec(ID,T,ARGS,BODY),[(ID,arrow(RES,T))|C]):-
+typeDec(C,funRec(ID,T,ARGS,BODY),[(ID,arrowtype(RES,T))|C]):-
 	get_typeArgs(ARGS,RES),
 	append(ARGS,C,CT),
-	CTT = [(ID,arrow(RES,T))|CT],
+	CTT = [(ID,arrowtype(RES,T))|CT],
 	typeExpr(CTT,BODY,T).
 
 /**************APS1*************/
 
 /*var*/
-typeDec(C,var(X,TYPE),CB) :-
-	CB=[(X,TYPE)|C].
-
+typeDec(C,var(X,_),CN) :- CN=[(X,_)|C].
 /*proc*/
 typeDec(C,proc(ID,ARGS,BODY),[(ID,arrowtype(RES,void))|C]):-
 	append(ARGS,C,CT),
@@ -104,8 +102,8 @@ typeDec(C,proc(ID,ARGS,BODY),[(ID,arrowtype(RES,void))|C]):-
 	
 	
 /*procRec*/
-typeDec(C,procrec(ID,ARGS,BODY),[(ID,arrowtype(RES,void))|C]):-
-	get_typeargs(ARGS,RES),
+typeDec(C,procRec(ID,ARGS,BODY),[(ID,arrowtype(RES,void))|C]):-
+	get_typeArgs(ARGS,RES),
 	append(ARGS,C,CT),
 	CTT = [(ID,arrowtype(RES,void))|CT],
 	typeBlock(CTT,BODY,void).
@@ -134,6 +132,26 @@ typeExpr(C,if(COND,E1,E2),T) :-
 	typeExpr(C,E1,T),
 	typeExpr(C,E2,T).
 
+/*app*/
+typeExpr(C,apply(id(F),ARGS),TF) :-
+	assoc(F,C,arrowtype(ARGSTYPE,TF)),
+	checkArgs(C,ARGS,ARGSTYPE).
+		
+typeExpr(C,apply(lambda(ARGSTYPE,BODY),ARGS),TF) :-
+	get_typeArgs(ARGSTYPE,RES),
+	checkArgs(C,ARGS,RES),
+	append(ARGSTYPE,C,CB),
+	typeExpr(CB,BODY,TF).
+	
+typeExpr(C,apply(apply(X,Y),ARGS),TR) :-
+	get_type(ARGS,RES),
+	typeExpr(C,apply(X,Y),arrowtype(RES,TR)).
+				
+/*abs*/
+typeExpr(C,lambda(ARGS,BODY),arrow(_,TF)) :-
+	append(ARGS,C,CB),
+	typeExpr(CB,BODY,TF).	
+	
 /*opérations entières */
 typeExpr(C,add(X,Y),int) :-
 	typeExpr(C,X,int),
@@ -171,26 +189,7 @@ typeExpr(C,lt(X,Y),bool) :-
 typeExpr(C,not(X),bool) :-
 	typeExpr(C,X,bool).
 	
-/*app*/
-typeExpr(C,apply(id(F),ARGS),TF) :-
-	assoc(F,C,arrowtype(ARGSTYPE,TF)),
-	checkArgs(C,ARGS,ARGSTYPE).
-		
-typeExpr(C,apply(lambda(ARGSTYPE,BODY),ARGS),TF) :-
-	get_typeArgs(ARGSTYPE,RES),
-	checkArgs(C,ARGS,RES),
-	append(ARGSTYPE,C,CB),
-	typeExpr(CB,BODY,TF).
-	
-typeExpr(C,apply(apply(X,Y),ARGS),TR) :-
-	get_type(ARGS,RES),
-	typeExpr(C,apply(X,Y),arrowtype(RES,TR)).
-				
-/*abs*/
-typeExpr(C,lambda(ARGS,BODY),arrow(_,TF)) :-
-	append(ARGS,C,CB),
-	typeExpr(CB,BODY,TF).	
-	
+
 
    
 
