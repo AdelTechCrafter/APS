@@ -6,5 +6,4 @@ do
 	./../evaluateur $f
 	echo -e
 done
-
 echo "Eval succesfully ended"

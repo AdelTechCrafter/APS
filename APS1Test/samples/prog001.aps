@@ -1,3 +1,0 @@
-[
-  ECHO (sub (div (add 73 128) 3) (add 3 (mul 11 2)))
-]
