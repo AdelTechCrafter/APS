@@ -30,5 +30,5 @@ type token =
   | REC
   | EOL
 
-val line :
+val prog :
   (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> Ast.expr
