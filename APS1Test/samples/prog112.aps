@@ -1,7 +1,0 @@
-[
-  PROC printBool [b:bool]
-    [
-      IF b [ECHO 1 ] [ECHO 0]
-    ];
-  CALL printBool true
-]
