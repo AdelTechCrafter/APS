@@ -1,10 +1,7 @@
 open Ast;;
 
-type valeur = InN of int | InF of expr * string list | InFR of valeur | None
-type ident = Pair of string * valeur
-
-let environnement = ref [];;
-let output_flux = ref [];;
+type valeur = InN of int | InF of expr * string list * ident list | InFR of valeur | None
+and ident = Pair of string * valeur
 
 let print_val value =
 	match value with
@@ -67,24 +64,8 @@ let get_id arg =
 
 let rec create_fermeture args env =
 	match args with
-	ASTArgs(a1,a2) -> create_fermeture a2 (env@[get_id a1])
-	|ASTArg(a) -> env@[get_id a]
-
-let rec extract_values expr res_values =
-	match expr with
-	ASTExprs(e,exprs) -> extract_values exprs (res_values@[e])
-	| ASTExpr(e) -> res_values@[e]
-;;
-
-let rec extract_fun expr =
-	match expr with 
-	InF(e_prim,fermeture) -> (e_prim,fermeture)
-	| InFR(fermeture) -> extract_fun fermeture
-	| _ -> failwith "not a function"
-;;
-
-let create_env_fun fermeture exprs =
-	List.map2 (function a -> function e -> Pair(a,e) ) fermeture exprs
+	ASTArgs(a1,a2) -> create_fermeture a2 ([get_id a1]@env)
+	|ASTArg(a) -> [get_id a]@env
 ;;
 
 let rec eval_expr expr env = 
@@ -96,22 +77,30 @@ let rec eval_expr expr env =
 	| ASTBPrim(opbin,e1,e2) -> if is_opbin opbin then eval_opbin opbin (eval_expr e1 env) (eval_expr e2 env) else failwith "not a binary operator"
 	| ASTUPrim(opu,e) -> if is_opun opu then eval_opun opu (eval_expr e env) else failwith "not a unary operator"
 	| ASTIf(e1,e2,e3) -> if (eval_expr e1 env) = InN(1) then eval_expr e2 env else if (eval_expr e1 env) = InN(0) then (eval_expr e3 env) else failwith "not a boolean value"
-	| ASTLambda(args,e_prim) -> InF(e_prim,create_fermeture args [])
-	| ASTApply(expr,exprs) -> ( match (eval_expr expr env) with
-				InF(e_prim,fermeture) -> let (e_prim,f) = extract_fun (eval_expr expr env) in
-				eval_expr e_prim ((create_env_fun f (List.map (function e -> eval_expr e env) (extract_values exprs []) ) )@env)
-				 
-				| InFR(fermeture) -> let (e_prim,f) =  (extract_fun fermeture) in
-					eval_expr (ASTApply(e_prim,exprs)) ((create_env_fun f (List.map (function e -> eval_expr e env) (extract_values exprs []) ) )@env)
-				| InN(n) -> InN(n)
-				| _ -> failwith "not an appliable function")
-;;
+	| ASTLambda(args,e_prim) -> InF(e_prim,create_fermeture args [],env)
+	
+	| ASTApply (expr,exprs) -> match (eval_expr expr env) with
+					InF(e_prim,fermeture,envi) -> let env_fun = (assoc_val fermeture (get_eval exprs env))@envi in
+									eval_expr e_prim env_fun
+					| InFR(fermeture) ->( match fermeture with
+								InF(e_prim,f,envi) -> let env_fun = (assoc_val f (get_eval exprs env))@env in
+									eval_expr (ASTApply(e_prim,exprs)) env_fun
+								| _ -> failwith "not a recursive function")
+					| InN(n) -> InN(n)
+					| _ -> failwith "application result not applied yet"
+and get_eval exprs env =
+	match exprs with
+	ASTExprs(e,es) -> (eval_expr e env)::(get_eval es env)
+	| ASTExpr(e) -> (eval_expr e env)::[]
+
+and assoc_val fermeture exprs =
+	List.map2 (function a -> function e -> Pair(a,e) ) fermeture exprs
 
 let eval_dec dec env=
 	match dec with
 	| ASTConst(id,t,expr) -> (Pair(id,(eval_expr expr env))::env)
-	| ASTFun(id,t,args,expr) -> (Pair(id,InF(expr,create_fermeture args []))::env)
-	| ASTFunRec(id,t,args,expr) -> (Pair(id, InFR(InF(expr,create_fermeture args [])))::env)
+	| ASTFun(id,t,args,expr) -> (Pair(id,InF(expr,create_fermeture args [],env))::env)
+	| ASTFunRec(id,t,args,expr) -> (Pair(id, InFR(InF(expr,create_fermeture args [],env)))::env)
 
 let eval_stat stat env output =
 	match stat with
@@ -129,7 +118,7 @@ let rec print_output sortie =
 
 let eval_prog prog =
 	match prog with
-	ASTProg(cmds) -> print_output (eval_cmds cmds !environnement !output_flux)
+	ASTProg(cmds) -> print_output (eval_cmds cmds [] [])
 
 let _ =
 	try
