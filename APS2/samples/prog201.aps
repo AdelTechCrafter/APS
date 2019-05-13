@@ -1,0 +1,11 @@
+[
+  CONST xs (vec int) (alloc 5);
+  VAR i int;
+  SET i 0;
+  WHILE (lt i (len xs))
+    [
+      SET (nth xs i) (add i 1);
+      SET i (add i 1)
+    ]
+    
+]

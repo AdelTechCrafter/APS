@@ -1,0 +1,15 @@
+[
+  PROC fill [xs:(vec int)]
+    [
+      VAR i int;
+      SET i 0;
+      WHILE (lt i (len xs))
+        [
+	  CONST n int (add i 1);
+	  SET (nth xs i) n;
+	  SET i n
+	]
+    ];
+  CONST xs (vec int) (alloc 5);
+  CALL fill xs
+]

@@ -1,0 +1,17 @@
+[
+  PROC map [f:(void -> void), xs:(vec void)] [
+     VAR i int;
+     SET i 0;
+     WHILE (lt i (len xs)) [
+       SET (nth xs i) (f (nth xs i));
+       SET i (add i 1)
+     ]
+  ];   
+  CONST xs (vec bool) (alloc 4);
+  SET (nth xs 0) true;
+  SET (nth xs 1) true;
+  SET (nth xs 2) false;
+  SET (nth xs 3) true;
+  CALL map [x:bool](not x) xs
+
+]

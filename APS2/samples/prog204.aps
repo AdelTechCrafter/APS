@@ -1,0 +1,12 @@
+[
+  CONST xss (vec (vec bool)) (alloc 3);
+  VAR i int;
+  SET i 0;
+  WHILE (lt i (len xss))
+    [
+      SET (nth xss i) (alloc (add i 1));
+      SET i (add i 1)
+    ];
+  SET (nth (nth xss 0) 0) true
+  
+]

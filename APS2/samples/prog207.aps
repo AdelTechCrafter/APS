@@ -1,0 +1,25 @@
+[
+  PROC bubble [xs:(vec int)][
+    CONST ln int (len xs);
+    VAR i int;
+    SET i 1;
+    WHILE (lt i ln) [
+      CONST X int (nth xs (sub i 1));
+      IF (lt (nth xs i) X) [
+        SET (nth xs (sub i 1)) (nth xs i);
+        SET (nth xs i) X;
+	SET i (add i 1) 
+      ]
+      [
+        SET i (add i 1) 
+      ]
+    ]  
+  ];
+  CONST xs (vec int) (alloc 5);
+  SET (nth xs 0) 6;
+  SET (nth xs 1) 5;
+  SET (nth xs 2) 4;
+  SET (nth xs 3) 3;
+  SET (nth xs 4) 2;
+  CALL bubble xs
+]
